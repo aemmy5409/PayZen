@@ -1,6 +1,6 @@
 # Payzen API - README
 
-**Base URL:** ``http://localhost:8080`
+**Base URL:** `http://localhost:8080`
 
 Payzen is a simple invoicing API with user authentication, invoice creation, PDF generation, and dashboard summaries.
 It is deliberately lightweight, secure by default, and built on the some of the most proven Node.js stack — Express + Prisma + PostgreSQL + Redis.
