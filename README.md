@@ -56,7 +56,9 @@ curl -X POST http://localhost:8080/api/v1/auth/logout \
 
 ### 4. Refresh Token
 ```bash
-curl -X GET "http://localhost:8080/api/v1/auth/refresh-token?token=<refresh_token>"
+curl -X POST http://localhost:8080/api/v1/auth/refresh-token \
+  -H "Content-Type: application/json" \
+  -d '{"token": "your_refresh_token_here"}'
 ```
 
 ### 5. Verify Email
@@ -83,7 +85,6 @@ curl -X POST http://localhost:8080/invoices \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "clientId": 5,
     "client": {
       "name": "Jane Smith",
       "email": "jane@client.com",
@@ -93,7 +94,7 @@ curl -X POST http://localhost:8080/invoices \
     "issueDate": "2025-11-23",
     "dueDate": "2025-12-23",
     "purchaseOrder": "PO-2025-001",
-    "status": "pending",
+    "status": "PAID",
     "logoUrl": "https://example.com/logo.png",
     "items": [
       { "description": "Web Design", "quantity": 10, "rate": 150.00, "discount": 0 },
