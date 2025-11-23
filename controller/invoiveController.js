@@ -1,4 +1,11 @@
 import { prisma } from "../lib/prisma.js"
+import { generatePdf } from "../utils/generatePdf.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const generateInvoiceNumber = async(userId) => {
     const count = await prisma.invoice.count({ where: { userId } })
@@ -19,7 +26,6 @@ export const createInvoice = async(req, res) => {
             if(existing) {
                 finalClientId = existing.id
             }else {
-                console.log(req.userId);
                 const newClient = await prisma.client.create({
                     data: {
                         ...client,
@@ -152,3 +158,110 @@ export const getInvoiceSummary = async(req, res) => {
         return res.status(500).json({"success": false, "message": "An error occurred while generating invoice summary"});
     }
 }
+
+export const downloadInvoice = async(req, res) => {
+    const id = Number(req.params.id)
+     
+    if(!id) {
+        return res.status(401).json({"succes": false, "message": "Bad request, id paramatere required"})
+    }
+
+    const invoice = await prisma.invoice.findFirst({
+        where: {
+            id,
+            userId: req.userId
+        },
+        include: {client: true, items: true}
+    })
+
+    if(!invoice) {
+        return res.status(404).json({"success": false, "message": "Not found, Invoice doesn't exist"})
+    }
+
+    const user = await prisma.user.findUnique({ where: {id: req.userId}});
+    if(!user) {
+        return res.status(401).json({"success": false, "message": ""})
+    }
+
+    const pdf = await generatePdf({user, invoice})
+
+    res.set({
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename=Invoice_${invoice.invoice_number}.pdf`
+    })
+
+    res.send(pdf);
+}
+
+
+export const uploadLogo = async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({
+            success: false,
+            message: "No file uploaded"
+        });
+    }
+
+    const logoUrl = `/uploads/${req.file.filename}`;
+    const fullUrl = `${req.protocol}://${req.get("host")}${logoUrl}`;
+
+    const invoiceId = Number(req.body.invoiceId) || null;
+
+    try {
+        let updatedInvoiceId = null;
+
+        if (invoiceId) {
+
+            if (isNaN(invoiceId)) {
+                // Clean up uploaded file if invoiceId is invalid
+                await fs.promises.unlink(req.file.path).catch(() => {});
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid invoiceId"
+                });
+            }
+
+            const result = await prisma.invoice.updateMany({
+                where: {
+                    id: invoiceId,
+                    userId: req.userId
+                },
+                data: {
+                    logo_url: logoUrl
+                }
+            });
+
+            if (result.count === 0) {
+                // Invoice not found → delete uploaded file
+                try {
+                    await fs.promises.unlink(req.file.path);
+                } catch (unlinkErr) {
+                    console.warn("Failed to delete orphaned logo:", unlinkErr);
+                }
+                return res.status(404).json({
+                    success: false,
+                    message: "Invoice not found"
+                });
+            }
+            updatedInvoiceId = Number(invoiceId);
+        }
+
+        return res.status(200).json({
+            success: true,
+            logoUrl: fullUrl,
+            invoiceId: updatedInvoiceId || null
+        });
+
+    } catch (err) {
+        console.log("Error in uploadLogo:", err);
+
+        // Always try to clean up the uploaded file on error
+        await fs.promises.unlink(req.file.path).catch(() => {});
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to process logo upload"
+        });
+    
+    }
+};

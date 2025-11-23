@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
 
 import authRoutes from './routes/authRoutes.js';
 import invoiceRoute from './routes/invoiceRoutes.js';
@@ -14,12 +15,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-app.use('/api', authRoutes)
-app.use('/api', invoiceRoute)
+app.use('/api/v1', authRoutes)
+app.use('/api/v1', invoiceRoute)
 
 app.get('/', protectRoute, (req, res) => {
-    res.status(200).json({"message": "hi there!"})
+    res.status(200).json({"success": true, "message": "hi there!"})
 })
 
 app.listen(PORT, () => {
