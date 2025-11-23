@@ -5,7 +5,58 @@
 Payzen is a simple invoicing API with user authentication, invoice creation, PDF generation, and dashboard summaries.
 It is deliberately lightweight, secure by default, and built on the some of the most proven Node.js stack — Express + Prisma + PostgreSQL + Redis.
 
+## Database Schema / ERD
 
+![ERD](./erd.jpeg)
+
+---
+
+## Quick Start (How to run the project locally)
+
+### Prerequisites
+- Node.js ≥ 18
+- PostgreSQL running on `localhost:5432`
+- Redis running on `localhost:6379`
+- npm
+
+### 1. Clone & Install
+```bash
+mkdir Payzen && cd Payzen
+git clone https://github.com/aemmy5409/PayZen.git .
+npm install
+```
+
+### 2. Set up environment variables
+
+**.env**
+```properties
+PORT=8080
+JWT_KEY=your-jwt-secret-here
+REFRESH_TOKEN_KEY=another-secret
+CLIENT_URL=http://localhost:8080
+
+# Email (Gmail App Password recommended)
+EMAIL=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+
+# Database
+DATABASE_URL="postgresql://yourdb_username:yourdb_password@localhost:5432/payzen"
+```
+
+### 3. Run database migrations
+```bash
+npx prisma migrate dev --name init
+npx prisma generate 
+```
+
+### 4. Start the server
+```bash
+npm run start        # development (nodemon)
+```
+
+Server will be available at **http://localhost:8080**
+
+---
 
 All protected endpoints require the header:  
 `Authorization: Bearer <your-access-token>`
